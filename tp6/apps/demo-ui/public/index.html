@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>POC EDA - Saga Activaciones</title>
+  <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #0f172a; color: #f8fafc; padding: 2rem; margin: 0; }
+    .container { max-width: 900px; margin: 0 auto; }
+    h1 { color: #38bdf8; }
+    .card { background: #1e293b; padding: 1.5rem; border-radius: 8px; margin-bottom: 1.5rem; border: 1px solid #334155; }
+    label { display: block; margin-bottom: 0.5rem; font-weight: 600; }
+    input, select, button { padding: 0.75rem; border-radius: 6px; border: 1px solid #475569; width: 100%; box-sizing: border-box; margin-bottom: 1rem; background: #0f172a; color: white; }
+    button { background: #0284c7; color: white; border: none; font-weight: bold; cursor: pointer; transition: 0.2s; }
+    button:hover { background: #0369a1; }
+    .log-box { background: #020617; border: 1px solid #1e293b; border-radius: 6px; padding: 1rem; height: 300px; overflow-y: auto; font-family: monospace; font-size: 0.9rem; }
+    .log-entry { margin-bottom: 0.5rem; border-bottom: 1px solid #1e293b; padding-bottom: 0.3rem; }
+    .tag { display: inline-block; padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.75rem; font-weight: bold; margin-right: 0.5rem; }
+    .PENDING { background: #ca8a04; color: black; }
+    .COMPLETED { background: #16a34a; color: white; }
+    .FAILED { background: #dc2626; color: white; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🚀 Saga Activaciones Telecom (EDA 2026)</h1>
+    <div class="card">
+      <h3>Nueva Activación de Servicio</h3>
+      <label>DNI del Cliente:</label>
+      <input type="text" id="clientDoc" value="35123456" placeholder="Terminado en 99 (falla billing) o 88 (falla prov)">
+      <label>Tipo de Servicio:</label>
+      <select id="serviceType">
+        <option value="INTERNET_FIBRA_300M">Internet Fibra 300 Mbps</option>
+        <option value="INTERNET_FIBRA_1000M">Internet Fibra 1 Gbps</option>
+        <option value="TELEFONIA_MOVIL_5G">Telefonía Móvil 5G</option>
+      </select>
+      <button onclick="solicitarActivacion()">Solicitar Activación</button>
+    </div>
+
+    <div class="card">
+      <h3>Eventos en Tiempo Real (WebSocket)</h3>
+      <div id="logs" class="log-box"></div>
+    </div>
+  </div>
+
+  <script>
+    const socket = io('http://localhost:3000');
+    const logsDiv = document.getElementById('logs');
+
+    socket.on('connect', () => {
+      appendLog('INFO', 'Conectado al WebSocket Gateway de activation-api (puerto 3000)');
+    });
+
+    socket.on('activation.status', (data) => {
+      appendLog(data.status, `[${data.correlationId}] Estado: ${data.status} | Payload: ${JSON.stringify(data.payload)}`);
+    });
+
+    async function solicitarActivacion() {
+      const clientDocument = document.getElementById('clientDoc').value;
+      const serviceType = document.getElementById('serviceType').value;
+      
+      const res = await fetch('http://localhost:3000/activations', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ clientDocument, serviceType })
+      });
+      const data = await res.json();
+      appendLog('PENDING', `Saga iniciada con correlationId: ${data.correlationId}`);
+    }
+
+    function appendLog(status, message) {
+      const entry = document.createElement('div');
+      entry.className = 'log-entry';
+      entry.innerHTML = `<span class="tag ${status}">${status}</span> ${new Date().toLocaleTimeString()} - ${message}`;
+      logsDiv.prepend(entry);
+    }
+  </script>
+</body>
+</html>
