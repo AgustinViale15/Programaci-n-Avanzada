@@ -1,0 +1,17 @@
+{
+  "name": "@rutasur/analytics",
+  "version": "1.0.0",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js"
+  },
+  "dependencies": {
+    "@rutasur/shared": "file:../../shared",
+    "kafkajs": "^2.2.4",
+    "mongodb": "^6.3.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "typescript": "^5.3.3"
+  }
+}
